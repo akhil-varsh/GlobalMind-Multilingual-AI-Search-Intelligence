@@ -1,0 +1,120 @@
+.App {
+  text-align: center;
+}
+
+/* Custom styling for multilingual support */
+.multilingual-text {
+  font-family: "Noto Sans Devanagari", "Noto Sans Telugu", "Roboto", sans-serif;
+  line-height: 1.6;
+}
+
+/* Loading animation */
+.loading-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1976d2;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1565c0;
+}
+
+/* Response animation */
+.response-card {
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Cultural context chips */
+.cultural-chip {
+  margin: 2px;
+  font-size: 0.8rem;
+}
+
+/* Responsive text */
+@media (max-width: 600px) {
+  .App-header {
+    font-size: 1.5rem;
+  }
+  
+  .query-input {
+    font-size: 14px;
+  }
+}
+
+/* Language-specific fonts */
+.hindi-text {
+  font-family: "Noto Sans Devanagari", sans-serif;
+}
+
+.telugu-text {
+  font-family: "Noto Sans Telugu", sans-serif;
+}
+
+.marathi-text {
+  font-family: "Noto Sans Devanagari", sans-serif;
+}
+
+/* Example query buttons */
+.example-query-btn {
+  margin: 4px;
+  text-align: left;
+  text-transform: none;
+  font-size: 0.85rem;
+}
+
+/* Status indicators */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-healthy {
+  background-color: #4caf50;
+}
+
+.status-warning {
+  background-color: #ff9800;
+}
+
+.status-error {
+  background-color: #f44336;
+}

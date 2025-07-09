@@ -78,30 +78,3 @@ if st.button("Search and Extract"):
 st.markdown("---")
 st.markdown("💡 Powered by Google CSE + Newspaper3k + Streamlit")
 
-# import requests
-
-# # Replace with your actual API key and CSE ID
-# API_KEY = "AIzaSyAU1JQ_nsWtUl7HlQk0Cyo4Z0BXEzfEjcc"
-# CSE_ID = "82da8e240e25c4f0c"
-
-# def google_search(query, api_key=API_KEY, cse_id=CSE_ID, num_results=10):
-#     url = "https://www.googleapis.com/customsearch/v1"
-#     params = {
-#         "q": query,
-#         "key": api_key,
-#         "cx": cse_id,
-#         "num": num_results,
-#     }
-#     response = requests.get(url, params=params)
-    
-#     if response.status_code == 200:
-#         results = response.json()
-#         for i, item in enumerate(results.get("items", []), 1):
-#             print(f"{i}. {item['title']}\n{item['link']}\n")
-#     else:
-#         print("❌ Error:", response.status_code, response.text)
-
-# # Example usage
-# if __name__ == "__main__":
-#     query = input("Enter your search query: ")
-#     google_search(query)

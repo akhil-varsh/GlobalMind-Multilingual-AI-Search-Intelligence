@@ -205,4 +205,6 @@ globalmind_fl.db
 cultural_knowledge_cache/
 response_cache/
 
+# Project documentation and backup files
 backup.txt
+report.txt

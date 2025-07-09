@@ -18,8 +18,8 @@ class GoogleCSEIntegration:
     """Google Custom Search Engine Integration for real-world data"""
     
     def __init__(self, api_key: str = None, cse_id: str = None):
-        self.api_key = api_key or os.getenv('GOOGLE_CSE_API_KEY', 'AIzaSyAU1JQ_nsWtUl7HlQk0Cyo4Z0BXEzfEjcc')
-        self.cse_id = cse_id or os.getenv('GOOGLE_CSE_ID', '82da8e240e25c4f0c')
+        self.api_key = api_key or os.getenv('GOOGLE_CSE_API_KEY', '')
+        self.cse_id = cse_id or os.getenv('GOOGLE_CSE_ID', '')
         self.base_url = "https://www.googleapis.com/customsearch/v1"
     
     def search_with_language_context(self, query: str, language: str, num_results: int = 5) -> List[Dict]:

@@ -1,3 +1,6 @@
 NEWS API- d7da962c15174e8fb795de543780e8ad
 
 AIzaSyAU1JQ_nsWtUl7HlQk0Cyo4Z0BXEzfEjcc
+# 🔧 Configure your Google Custom Search API
+API_KEY = "AIzaSyAU1JQ_nsWtUl7HlQk0Cyo4Z0BXEzfEjcc"
+CSE_ID = "82da8e240e25c4f0c" 

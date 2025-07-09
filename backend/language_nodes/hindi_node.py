@@ -1,11 +1,12 @@
 """
 Hindi Language Node
-Specialized node for processing Hindi queries with Indian cultural context
+Enhanced node for processing Hindi queries with real-world data integration
 """
 
 import asyncio
 import logging
 import re
+import time
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import json
@@ -16,11 +17,26 @@ logger = logging.getLogger(__name__)
 
 class HindiNode(BaseLanguageNode):
     """
-    Hindi language federated learning node with Indian cultural context
+    Enhanced Hindi language federated learning node with real-world data integration
     """
     
-    def __init__(self, config: Dict[str, Any]):
-        super().__init__("hi", config)
+    def __init__(self, config: Dict[str, Any] = None):
+        super().__init__("hi", config or {})
+        
+        # Initialize real-world data integration
+        try:
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from core.real_world_data import GoogleCSEIntegration, RealWorldDataAggregator
+            
+            self.google_cse = GoogleCSEIntegration()
+            self.real_world_aggregator = RealWorldDataAggregator(self.google_cse)
+            self.real_world_enabled = True
+            logger.info("✅ Real-world data integration enabled for Hindi Node")
+        except Exception as e:
+            logger.warning(f"⚠️ Real-world data integration disabled: {e}")
+            self.real_world_enabled = False
         
         # Hindi-specific configurations
         self.script_patterns = {
@@ -33,6 +49,15 @@ class HindiNode(BaseLanguageNode):
             "festivals", "food", "healthcare", "education", 
             "traditions", "business", "government"
         ]
+        
+        # Performance tracking
+        self.performance_metrics = {
+            "total_queries": 0,
+            "successful_queries": 0,
+            "real_world_queries": 0,
+            "average_response_time": 0,
+            "total_response_time": 0
+        }
         
     async def _load_cultural_context(self):
         """Load Hindi/Indian cultural context"""
@@ -154,26 +179,41 @@ class HindiNode(BaseLanguageNode):
         logger.info("Hindi cultural context loaded successfully")
         
     async def process_query(self, query: str, context: Optional[Dict] = None) -> Dict[str, Any]:
-        """Process Hindi search query with cultural context"""
-        start_time = datetime.now()
+        """Enhanced Hindi search query processing with real-world data"""
+        start_time = time.time()
+        self.performance_metrics["total_queries"] += 1
         
         try:
             logger.info(f"Processing Hindi query: {query[:50]}...")
             
-            # Detect script and language validation
+            # 1. Detect script and language validation
             script_info = await self._detect_script(query)
             
-            # Extract cultural context
+            # 2. Extract cultural context
             cultural_context = await self._detect_cultural_context(query)
             
-            # Process query based on intent
+            # 3. Process query based on intent
             intent = await self._classify_intent(query)
             
-            # Generate culturally-aware response
-            response = await self._generate_response(query, intent, cultural_context)
+            # 4. Determine if real-world data is needed
+            needs_real_world_data = await self._should_fetch_real_world_data(query, intent, cultural_context)
+            
+            # 5. Get real-world data if needed and available
+            real_world_data = None
+            if needs_real_world_data and self.real_world_enabled:
+                try:
+                    self.performance_metrics["real_world_queries"] += 1
+                    real_world_data = self.real_world_aggregator.get_real_world_context(
+                        query, 'hindi', cultural_context
+                    )
+                except Exception as e:
+                    logger.warning(f"Real-world data fetch failed: {e}")
+            
+            # 6. Generate culturally-aware response
+            response = await self._generate_enhanced_response(query, intent, cultural_context, real_world_data)
             
             # Calculate response time
-            response_time = (datetime.now() - start_time).total_seconds() * 1000
+            response_time = (time.time() - start_time) * 1000
             
             # Update metrics
             self._update_metrics(True, response_time)
@@ -181,27 +221,35 @@ class HindiNode(BaseLanguageNode):
             # Store query for learning
             self.query_history.append({
                 "query": query,
-                "timestamp": start_time.isoformat(),
+                "timestamp": start_time,
                 "intent": intent,
                 "cultural_context": cultural_context,
+                "has_real_world_data": real_world_data is not None,
                 "response_time_ms": response_time
             })
             
-            return {
+            result = {
                 "query": query,
                 "language": "hindi",
                 "script": script_info,
                 "intent": intent,
                 "cultural_context": cultural_context,
+                "real_world_data": real_world_data,
                 "response": response,
-                "confidence": 0.85,  # Simulated confidence
+                "confidence": self._calculate_confidence(cultural_context, real_world_data),
                 "response_time_ms": round(response_time, 2),
-                "timestamp": start_time.isoformat()
+                "timestamp": datetime.fromtimestamp(start_time).isoformat(),
+                "node_id": "hindi_node_enhanced"
             }
+            
+            self.performance_metrics["successful_queries"] += 1
+            logger.info(f"✅ Successfully processed Hindi query in {response_time:.2f}ms")
+            
+            return result
             
         except Exception as e:
             # Update metrics for failed query
-            response_time = (datetime.now() - start_time).total_seconds() * 1000
+            response_time = (time.time() - start_time) * 1000
             self._update_metrics(False, response_time)
             
             logger.error(f"Error processing Hindi query: {e}")
@@ -209,7 +257,8 @@ class HindiNode(BaseLanguageNode):
                 "error": str(e),
                 "query": query,
                 "language": "hindi",
-                "timestamp": start_time.isoformat()
+                "timestamp": datetime.now().isoformat(),
+                "response_time_ms": round(response_time, 2)
             }
             
     async def _detect_script(self, query: str) -> Dict[str, Any]:
@@ -347,22 +396,150 @@ class HindiNode(BaseLanguageNode):
             
     def _generate_festival_guide(self, festival_name: str) -> str:
         """Generate festival preparation guide"""
-        if festival_name == "दिवाली":
-            return """
-            दिवाली की तैयारी के लिए:
-            1. घर की सफाई और रंगाई-पुताई करें
-            2. दीये, मोमबत्तियां और रंगोली तैयार करें  
-            3. लक्ष्मी पूजा की सामग्री खरीदें
-            4. मिठाइयां और उपहार तैयार करें
-            5. नए कपड़े और गहने खरीदें
-            """
-        elif festival_name == "होली":
-            return """
-            होली की तैयारी के लिए:
-            1. प्राकृतिक रंग तैयार करें या खरीदें
-            2. गुजिया और अन्य मिठाइयां बनाएं
-            3. ठंडाई तैयार करें
-            4. होलिका दहन की तैयारी करें
-            """
+    async def health_check(self) -> Dict[str, Any]:
+        """Enhanced health check including real-world data status"""
+        basic_health = await super().health_check()
+        
+        # Test real-world data connectivity
+        real_world_status = "disconnected"
+        if self.real_world_enabled:
+            try:
+                test_results = self.google_cse.search_with_language_context("भारत", "hindi", 1)
+                real_world_status = "connected" if test_results else "limited"
+            except:
+                real_world_status = "error"
+        
+        basic_health.update({
+            "real_world_data_status": real_world_status,
+            "real_world_enabled": self.real_world_enabled,
+            "performance_metrics": self.performance_metrics,
+            "cache_size": len(self.real_world_aggregator.cache) if self.real_world_enabled else 0,
+            "enhanced_features": "enabled" if self.real_world_enabled else "disabled"
+        })
+        
+        return basic_health
+        
+    async def _should_fetch_real_world_data(self, query: str, intent: str, cultural_context: Dict) -> bool:
+        """Determine if real-world data should be fetched"""
+        # Fetch real-world data for current events, news, or when cultural context is limited
+        real_world_intents = ['current_events', 'news', 'government_schemes', 'recent_information']
+        
+        if intent in real_world_intents:
+            return True
+        
+        # If cultural context is limited, try real-world data
+        if not cultural_context.get('festivals') and not cultural_context.get('food_items'):
+            return True
+        
+        # For healthcare and how-to queries, always get real-world data
+        if intent in ['healthcare_advice', 'how_to']:
+            return True
+        
+        return False
+    
+    async def _generate_enhanced_response(self, query: str, intent: str, cultural_context: Dict, real_world_data: Dict = None) -> Dict:
+        """Generate comprehensive response combining cultural and real-world data"""
+        
+        response = {
+            "type": "enhanced_cultural_response",
+            "cultural_introduction": self._get_cultural_introduction(cultural_context, query),
+            "main_content": "",
+            "practical_advice": "",
+            "additional_resources": [],
+            "confidence_level": "high" if real_world_data else "medium"
+        }
+        
+        # Combine cultural knowledge with real-world information
+        if real_world_data and real_world_data.get('has_real_world_data'):
+            response["main_content"] = f"""
+**पारंपरिक ज्ञान**: {self._get_traditional_knowledge(cultural_context, intent)}
+
+**वर्तमान जानकारी**: {real_world_data['summary']}
+            """.strip()
+            
+            # Add real-world sources
+            response["additional_resources"] = [
+                {
+                    "title": result.get('title', 'No title'),
+                    "link": result.get('link', ''),
+                    "source": result.get('source', 'Unknown'),
+                    "snippet": result.get('snippet', '')[:100] + "..." if result.get('snippet') else ""
+                }
+                for result in real_world_data.get('search_results', [])[:3]
+            ]
         else:
-            return f"{festival_name} की पारंपरिक तैयारी की जानकारी।"
+            # Fall back to cultural knowledge only
+            response["main_content"] = self._get_traditional_knowledge(cultural_context, intent)
+        
+        # Add practical advice
+        response["practical_advice"] = self._generate_practical_advice(cultural_context, intent, real_world_data)
+        
+        return response
+    
+    def _get_cultural_introduction(self, cultural_context: Dict, query: str) -> str:
+        """Generate cultural introduction based on context"""
+        if cultural_context.get('festivals'):
+            return f"भारतीय संस्कृति में '{query}' का विशेष महत्व है।"
+        elif cultural_context.get('food_items'):
+            return f"भारतीय खाना पकाने की परंपरा में '{query}' की अपनी विशेषता है।"
+        elif cultural_context.get('healthcare_topics'):
+            return f"आयुर्वेदिक चिकित्सा पद्धति के अनुसार '{query}' के बारे में जानकारी।"
+        else:
+            return f"आपके प्रश्न '{query}' के बारे में विस्तृत जानकारी प्रस्तुत है।"
+    
+    def _get_traditional_knowledge(self, cultural_context: Dict, intent: str) -> str:
+        """Get traditional knowledge based on context"""
+        if cultural_context.get('festivals'):
+            festival = cultural_context['festivals'][0]
+            festival_name = festival.get('name', 'त्योहार') if isinstance(festival, dict) else str(festival)
+            return f"पारंपरिक रूप से {festival_name} का पर्व विशेष महत्व रखता है। इसमें पारंपरिक रीति-रिवाज और सांस्कृतिक मूल्य शामिल हैं।"
+        
+        if cultural_context.get('healthcare_topics'):
+            return "आयुर्वेदिक परंपरा के अनुसार प्राकृतिक उपचार और घरेलू नुस्खे का उपयोग करें। तुलसी, अदरक, हल्दी जैसी जड़ी-बूटियां फायदेमंद हैं।"
+        
+        if intent == "how_to":
+            return "पारंपरिक तरीकों का पालन करते हुए, धैर्य और अभ्यास से बेहतर परिणाम प्राप्त होते हैं।"
+        
+        return "भारतीय संस्कृति और परंपरा के अनुसार उचित मार्गदर्शन।"
+    
+    def _generate_practical_advice(self, cultural_context: Dict, intent: str, real_world_data: Dict = None) -> str:
+        """Generate practical advice combining traditional and modern knowledge"""
+        advice_parts = []
+        
+        # Traditional advice
+        if cultural_context.get('healthcare_topics'):
+            advice_parts.append("🌿 **पारंपरिक उपाय**: तुलसी, अदरक, और हल्दी का नियमित उपयोग करें।")
+        
+        if intent == "how_to":
+            advice_parts.append("📋 **व्यावहारिक सुझाव**: चरणबद्ध तरीके से अभ्यास करें।")
+        
+        # Modern advice from real-world data
+        if real_world_data and real_world_data.get('has_real_world_data'):
+            advice_parts.append("🌐 **आधुनिक जानकारी**: नवीनतम शोध और विशेषज्ञों की सलाह के अनुसार अपडेटेड जानकारी।")
+        
+        # Safety advice
+        advice_parts.append("⚠️ **सुरक्षा**: किसी भी महत्वपूर्ण निर्णय से पहले विशेषज्ञ से सलाह अवश्य लें।")
+        
+        return "\n".join(advice_parts) if advice_parts else "विशेषज्ञ सलाह की सिफारिश की जाती है।"
+    
+    def _calculate_confidence(self, cultural_context: Dict, real_world_data: Dict = None) -> float:
+        """Calculate confidence score based on available data"""
+        confidence = 0.6  # Base confidence
+        
+        if cultural_context.get('festivals') or cultural_context.get('food_items'):
+            confidence += 0.2
+        
+        if real_world_data and real_world_data.get('has_real_world_data'):
+            confidence += 0.2
+            if len(real_world_data.get('search_results', [])) >= 3:
+                confidence += 0.1
+        
+        return min(confidence, 1.0)
+    
+    def _update_performance_metrics(self, processing_time: float):
+        """Update performance metrics"""
+        self.performance_metrics["total_response_time"] += processing_time
+        self.performance_metrics["average_response_time"] = (
+            self.performance_metrics["total_response_time"] / 
+            max(self.performance_metrics["total_queries"], 1)
+        )

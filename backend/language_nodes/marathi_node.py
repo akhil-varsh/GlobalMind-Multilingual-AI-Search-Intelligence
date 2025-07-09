@@ -187,7 +187,7 @@ class MarathiNode(BaseLanguageNode):
         logger.info("Marathi cultural context loaded successfully")
         
     async def process_query(self, query: str, context: Optional[Dict] = None) -> Dict[str, Any]:
-        """Process Marathi search query with cultural context"""
+        """Process Marathi search query with cultural context and real-world data"""
         start_time = datetime.now()
         
         try:
@@ -202,8 +202,24 @@ class MarathiNode(BaseLanguageNode):
             # Process query based on intent
             intent = await self._classify_intent(query)
             
-            # Generate culturally-aware response
-            response = await self._generate_response(query, intent, cultural_context)
+            # Get real-world data if available
+            real_world_data = {}
+            try:
+                from ..core.real_world_data import GoogleCSEIntegration, RealWorldDataAggregator
+                
+                google_cse = GoogleCSEIntegration()
+                aggregator = RealWorldDataAggregator(google_cse)
+                
+                logger.info(f"🔍 Fetching real-world data for Marathi query: {query}")
+                real_world_data = aggregator.get_real_world_context(query, "marathi", cultural_context)
+                logger.info(f"✅ Found {len(real_world_data.get('search_results', []))} real results")
+                
+            except Exception as rwd_error:
+                logger.warning(f"Real-world data fetch failed: {rwd_error}")
+                real_world_data = {"search_results": [], "error": str(rwd_error)}
+            
+            # Generate culturally-aware response with real-world data
+            response = await self._generate_response(query, intent, cultural_context, real_world_data)
             
             # Calculate response time
             response_time = (datetime.now() - start_time).total_seconds() * 1000
@@ -217,7 +233,8 @@ class MarathiNode(BaseLanguageNode):
                 "timestamp": start_time.isoformat(),
                 "intent": intent,
                 "cultural_context": cultural_context,
-                "response_time_ms": response_time
+                "response_time_ms": response_time,
+                "has_real_world_data": len(real_world_data.get('search_results', [])) > 0
             })
             
             return {
@@ -226,6 +243,7 @@ class MarathiNode(BaseLanguageNode):
                 "script": script_info,
                 "intent": intent,
                 "cultural_context": cultural_context,
+                "real_world_data": real_world_data,
                 "response": response,
                 "confidence": 0.86,  # Simulated confidence
                 "response_time_ms": round(response_time, 2),
@@ -337,9 +355,45 @@ class MarathiNode(BaseLanguageNode):
         else:
             return "general_query"
             
-    async def _generate_response(self, query: str, intent: str, cultural_context: Dict) -> Dict[str, Any]:
-        """Generate culturally-aware Marathi response"""
+    async def _generate_response(self, query: str, intent: str, cultural_context: Dict, real_world_data: Dict = None) -> Dict[str, Any]:
+        """Generate culturally-aware Marathi response with real-world data integration"""
         
+        # Check if we have real-world data
+        search_results = real_world_data.get('search_results', []) if real_world_data else []
+        has_real_data = len(search_results) > 0
+        
+        if has_real_data:
+            # Generate response with real-world data
+            top_result = search_results[0]
+            real_content = top_result.get('content', top_result.get('snippet', ''))[:500]
+            real_sources = [r.get('source', 'Unknown') for r in search_results[:3]]
+            
+            response_content = f"""
+**वास्तविक माहिती**: {real_content}
+
+**स्रोत**: {', '.join(real_sources)}
+
+**अतिरिक्त संदर्भ**: या विषयावर आणखीही माहिती उपलब्ध आहे।
+            """.strip()
+            
+            return {
+                "type": "real_world_response",
+                "cultural_introduction": f"तुमच्या प्रश्न '{query}' बद्दल वास्तविक माहिती:",
+                "main_content": response_content,
+                "practical_advice": "🌐 **वास्तविक डेटा**: ही माहिती इंटरनेटवरून मिळवली आहे।",
+                "additional_resources": [
+                    {
+                        "title": result.get('title', 'No title'),
+                        "link": result.get('link', ''),
+                        "source": result.get('source', 'Unknown'),
+                        "snippet": result.get('snippet', '')[:100] + "..." if result.get('snippet') else ""
+                    }
+                    for result in search_results[:3]
+                ],
+                "confidence_level": "high"
+            }
+        
+        # Fallback to cultural context responses
         if intent == "how_to" and cultural_context["festivals"]:
             # Festival-related how-to query
             festival = cultural_context["festivals"][0]
@@ -388,7 +442,8 @@ class MarathiNode(BaseLanguageNode):
             return {
                 "type": "general_response",
                 "content": f"तुमच्या प्रश्न '{query}' बद्दल माहिती देण्याचा प्रयत्न करत आहे.",
-                "suggestion": "कृपया अधिक स्पष्ट माहितीसाठी प्रश्न नक्की करा."
+                "suggestion": "कृपया अधिक स्पष्ट माहितीसाठी प्रश्न नक्की करा.",
+                "confidence_level": "medium"
             }
             
     def _generate_festival_guide(self, festival_name: str) -> str:

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GlobalMind FL - Frontend Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .search-box {
+            margin: 20px 0;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 12px 24px;
+            margin-left: 10px;
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #1565c0;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #1976d2;
+        }
+        .error {
+            margin-top: 20px;
+            padding: 15px;
+            background: #ffebee;
+            border-radius: 4px;
+            border-left: 4px solid #f44336;
+            color: #c62828;
+        }
+        .loading {
+            margin-top: 20px;
+            text-align: center;
+            color: #666;
+        }
+        .source-link {
+            display: inline-block;
+            margin: 5px 10px 5px 0;
+            padding: 8px 12px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #1976d2;
+            font-size: 14px;
+        }
+        .source-link:hover {
+            background: #bbdefb;
+        }
+        .confidence {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f5e8;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 GlobalMind FL - Frontend Test</h1>
+        <p>Real-world multilingual AI search with live data from Google Search</p>
+        
+        <div class="search-box">
+            <input type="text" id="queryInput" placeholder="अपना प्रश्न यहाँ लिखें / మీ ప్రశ్న ఇక్కడ రాయండి / तुमचा प्रश्न इथे लिहा" />
+            <button onclick="searchQuery()" id="searchBtn">Search</button>
+        </div>
+        
+        <div>
+            <label for="languageSelect"><strong>Language:</strong></label>
+            <select id="languageSelect" aria-label="Select language">
+                <option value="">Auto-detect</option>
+                <option value="hindi">Hindi (हिंदी)</option>
+                <option value="telugu">Telugu (తెలుగు)</option>
+                <option value="marathi">Marathi (मराठी)</option>
+            </select>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        async function searchQuery() {
+            const query = document.getElementById('queryInput').value.trim();
+            const language = document.getElementById('languageSelect').value;
+            const resultDiv = document.getElementById('result');
+            const searchBtn = document.getElementById('searchBtn');
+            
+            if (!query) {
+                resultDiv.innerHTML = '<div class="error">कृपया प्रश्न दर्ज करें / Please enter a query</div>';
+                return;
+            }
+            
+            // Show loading state
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+            resultDiv.innerHTML = '<div class="loading">🔍 Fetching real-world data...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        language: language || null
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('API Response:', data);
+                displayResult(data);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Search';
+            }
+        }
+        
+        function displayResult(data) {
+            const resultDiv = document.getElementById('result');
+            
+            // Handle nested response structure
+            const resp = data.response.response || data.response;
+            const hasRealWorldData = data.response.real_world_data && 
+                data.response.real_world_data.search_results && 
+                data.response.real_world_data.search_results.length > 0;
+            
+            let html = '<div class="response">';
+            
+            // Header
+            html += `<h3>🤖 AI Response - ${data.detected_language}</h3>`;
+            if (hasRealWorldData) {
+                html += `<span style="background: #4caf50; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">🌐 Live Data</span>`;
+            }
+            
+            // Query info
+            html += `<p><strong>Query:</strong> ${data.query}</p>`;
+            html += `<p><strong>Processing Time:</strong> ${data.processing_time_ms}ms</p>`;
+            if (hasRealWorldData) {
+                html += `<p style="color: #4caf50;"><strong>Real-world sources:</strong> ${data.response.real_world_data.search_results.length} found</p>`;
+            }
+            
+            // Main content
+            if (resp.type === 'real_world_response') {
+                html += `<h4>🌐 ${resp.cultural_introduction}</h4>`;
+                html += `<div style="background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 4px;">`;
+                html += `<p style="white-space: pre-line;">${resp.main_content}</p>`;
+                if (resp.practical_advice) {
+                    html += `<div style="background: #e3f2fd; padding: 10px; margin-top: 10px; border-radius: 4px;">`;
+                    html += `${resp.practical_advice}`;
+                    html += `</div>`;
+                }
+                html += `</div>`;
+                
+                // Additional resources
+                if (resp.additional_resources && resp.additional_resources.length > 0) {
+                    html += `<h4>🔗 Additional Resources</h4>`;
+                    resp.additional_resources.forEach(resource => {
+                        html += `<a href="${resource.link}" target="_blank" class="source-link">`;
+                        html += `📄 ${resource.title} (${resource.source})`;
+                        html += `</a>`;
+                    });
+                }
+                
+                // Confidence level
+                const confidenceColor = resp.confidence_level === 'high' ? '#4caf50' : '#ff9800';
+                html += `<div class="confidence" style="background-color: ${confidenceColor}20;">`;
+                html += `<strong>Confidence:</strong> ${resp.confidence_level} `;
+                html += resp.confidence_level === 'high' ? '(Based on reliable sources)' : '(Limited data available)';
+                html += `</div>`;
+            } else {
+                // Handle other response types
+                html += `<p>${resp.content || resp.main_content || 'No content available'}</p>`;
+            }
+            
+            // Performance metrics
+            html += `<div style="margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 4px; font-size: 12px; color: #666;">`;
+            html += `Intent: ${data.response.intent} | Confidence: ${data.response.confidence} | `;
+            html += `Script: ${data.response.script?.primary_script} | Node: ${data.response.node_id || 'Unknown'}`;
+            if (hasRealWorldData) {
+                html += ` | Live Sources: ${data.response.real_world_data.search_results.length}`;
+            }
+            html += `</div>`;
+            
+            html += '</div>';
+            resultDiv.innerHTML = html;
+        }
+        
+        // Allow Enter key to trigger search
+        document.getElementById('queryInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchQuery();
+            }
+        });
+        
+        // Add some example queries
+        function loadExample(query) {
+            document.getElementById('queryInput').value = query;
+        }
+        
+        // Add example buttons
+        setTimeout(() => {
+            const container = document.querySelector('.container');
+            const exampleDiv = document.createElement('div');
+            exampleDiv.innerHTML = `
+                <h4>🔍 Example Queries (Click to try):</h4>
+                <button onclick="loadExample('दिवाली की सफाई कैसे करें')" style="margin: 5px; background: #ff9800;">दिवाली की सफाई</button>
+                <button onclick="loadExample('ఉగాది పండుగ ఎలా జరుపుకోవాలి')" style="margin: 5px; background: #ff9800;">ఉగాది పండుగ</button>
+                <button onclick="loadExample('गणेशचतुर्थी तयारी')" style="margin: 5px; background: #ff9800;">गणेशचतुर्थी तयारी</button>
+                <button onclick="loadExample('प्रधानमंत्री आवास योजना')" style="margin: 5px; background: #ff9800;">PM आवास योजना</button>
+            `;
+            container.appendChild(exampleDiv);
+        }, 100);
+    </script>
+</body>
+</html>

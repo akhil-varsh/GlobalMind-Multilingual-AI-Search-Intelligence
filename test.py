@@ -5,9 +5,7 @@ from newspaper import Article
 from urllib.parse import urlparse
 import time
 
-# 🔧 Configure your Google Custom Search API
-API_KEY = "AIzaSyAU1JQ_nsWtUl7HlQk0Cyo4Z0BXEzfEjcc"
-CSE_ID = "82da8e240e25c4f0c"  # Your provided cx
+ # Your provided cx
 
 def _get_language_restriction(language):
     # Map language to Google's language restriction format
